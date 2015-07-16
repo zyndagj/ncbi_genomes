@@ -43,9 +43,6 @@ def makeXY(years):
 
 def plotType(years,label):
 	X,Y = makeXY(years)
-	if X[-1] == 2014:
-		X = X[:-1]
-		Y = Y[:-1]
 	plt.plot(X,Y,label=label,linewidth=3)
 
 def get_tsv(file):
@@ -68,11 +65,11 @@ def parse(tsv, fName):
 			date = tmp[typeDict[fName][1]]
 			status = tmp[typeDict[fName][2]]
 			if fName[0] == 'p' or fName[0] == 'v':
-				if status == 'Complete' and date != '-':
+				if 'Complete' in status and date != '-':
 					year = date.split('/')[0]
 					years.append(int(year))
 			else:
-				if status == 'Chromosomes' and date != '-':
+				if ('Chromosome' in status or 'Complete' in status) and date != '-':
 					year = date.split('/')[0]
 					years.append(int(year))
 	return years
