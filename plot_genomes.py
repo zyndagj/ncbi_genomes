@@ -1,5 +1,6 @@
 #!/usr/bin/python
-import httplib
+try: import urllib2
+except: import urllib.request as urllib2
 import sys
 from optparse import OptionParser
 import matplotlib
@@ -21,8 +22,7 @@ def main():
 	files = ('eukaryotes.txt','prokaryotes.txt','viruses.txt')
 	plt.figure()
 	for f in files:
-		tsv = get_tsv(f)
-		years = parse(tsv, f)
+		years = parse(f)
 		name = f.split('.')[0]
 		plotType(years, name.capitalize())
 	plt.xlabel('Year')
@@ -45,25 +45,31 @@ def plotType(years,label):
 	X,Y = makeXY(years)
 	plt.plot(X,Y,label=label,linewidth=3)
 
-def get_tsv(file):
-	reportFolder = "ftp.ncbi.nlm.nih.gov"
-	conn = httplib.HTTPConnection(reportFolder)
-	conn.request("GET","/genomes/GENOME_REPORTS/"+file)
-	r1 = conn.getresponse()
-	data = r1.read()
-	conn.close()
-	return data
-
-def parse(tsv, fName):
+def parse(fName):
 	years = []
-	typeDict = {'prokaryotes.txt':(0,16,18),'viruses.txt':(0,12,14),'eukaryotes.txt':(0,16,18)}
-	lines = tsv.split('\n')
-	for line in lines:
-		if line:
-			tmp = line.split('\t')
-			name = tmp[typeDict[fName][0]]
-			date = tmp[typeDict[fName][1]]
-			status = tmp[typeDict[fName][2]]
+	url_base = "ftp://ftp.ncbi.nlm.nih.gov/genomes/GENOME_REPORTS/"
+	url = "%s/%s"%(url_base, fName)
+	typeDict = {'prokaryotes.txt':(0,13,15),'viruses.txt':(0,12,14),'eukaryotes.txt':(0,14,16)}
+	data = ""
+	chunk = True
+	resp = urllib2.urlopen(url)
+	while chunk:
+		chunk = resp.read()
+		data += chunk
+	data = data.split('\n')
+	for i,line in enumerate(data):
+		if line and line[0] != "#":
+			tmp = line.rstrip('\n').split('\t')
+			try:
+				name = tmp[typeDict[fName][0]]
+				date = tmp[typeDict[fName][1]]
+				status = tmp[typeDict[fName][2]]
+			except:
+				print fName
+				print line
+				print data[i+1]
+				for i,w in enumerate(tmp): print i,w
+				break
 			if fName[0] == 'p' or fName[0] == 'v':
 				if 'Complete' in status and date != '-':
 					year = date.split('/')[0]
